@@ -7,6 +7,7 @@ import android.hardware.usb.UsbDevice;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 import android.util.Pair;
 
 import java.io.InputStream;
@@ -183,17 +184,20 @@ public class Client {
       }
     }
 
-    boolean needPush = true;
     try {
-      String ls = adb.runAdbCmd("ls " + resolvedServerName);
-      needPush = ls == null || !ls.contains(resolvedServerName);
+      String msg = "scrcpy-server asset=" + resolvedServerAssetName + ", remote=" + resolvedServerName + ", version=" + resolvedScrcpyVersion;
+      Log.d("Client", msg);
+      L.logWithoutTime(uuid, msg);
     } catch (Exception ignored) {
     }
-    if (needPush) {
-      try (InputStream in = AppData.main.getAssets().open(resolvedServerAssetName)) {
-        adb.pushFile(in, resolvedServerName);
-      }
+
+    Log.d("Client", "Pushing server to device...");
+    L.logWithoutTime(uuid, "Pushing server to device...");
+    try (InputStream in = AppData.main.getAssets().open(resolvedServerAssetName)) {
+      adb.pushFile(in, resolvedServerName);
     }
+    Log.d("Client", "Push finished.");
+    L.logWithoutTime(uuid, "Push finished.");
 
     try {
       String sizeAndLs = adb.runAdbCmd("sh -c '(stat -c %s " + resolvedServerName + " 2>/dev/null || wc -c < " + resolvedServerName + "); ls -l " + resolvedServerName + "'");
