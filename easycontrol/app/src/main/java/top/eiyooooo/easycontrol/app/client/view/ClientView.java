@@ -215,30 +215,12 @@ public class ClientView implements TextureView.SurfaceTextureListener {
   public void updateMaxSize(Pair<Integer, Integer> maxSize) {
     if (maxSize == null || maxSize.first == 0 || maxSize.second == 0) return;
     this.maxSize = maxSize;
-    if (fullView != null && fullView.fullMaxSize != null && (AppData.setting.getFillFull() || (mode == 1 && device.setResolution))) {
-      if (videoSize != null) {
-        float fullMaxAspectRatio = (float) fullView.fullMaxSize.first / fullView.fullMaxSize.second;
-        float videoAspectRatio = (float) videoSize.first / videoSize.second;
-        if (Math.abs(fullMaxAspectRatio - videoAspectRatio) < aspectRatioThreshold) {
-          reCalculateTextureViewSize(fullView.fullMaxSize.first, fullView.fullMaxSize.second);
-          return;
-        }
-      }
-    }
     reCalculateTextureViewSize();
   }
 
   public void updateVideoSize(Pair<Integer, Integer> videoSize) {
     if (videoSize == null || videoSize.first == 0 || videoSize.second == 0) return;
     this.videoSize = videoSize;
-    if (fullView != null && fullView.fullMaxSize != null && (AppData.setting.getFillFull() || (mode == 1 && device.setResolution))) {
-      float fullMaxAspectRatio = (float) fullView.fullMaxSize.first / fullView.fullMaxSize.second;
-      float videoAspectRatio = (float) videoSize.first / videoSize.second;
-      if (Math.abs(fullMaxAspectRatio - videoAspectRatio) < aspectRatioThreshold) {
-        reCalculateTextureViewSize(fullView.fullMaxSize.first, fullView.fullMaxSize.second);
-        return;
-      }
-    }
     reCalculateTextureViewSize();
   }
 
@@ -257,12 +239,7 @@ public class ClientView implements TextureView.SurfaceTextureListener {
   // 重新计算TextureView大小
   private void reCalculateTextureViewSize() {
     if (maxSize == null || videoSize == null) return;
-    // 根据原画面大小videoSize计算在maxSize空间内的最大缩放大小
-    int tmp1 = videoSize.second * maxSize.first / videoSize.first;
-    // 横向最大不会超出
-    if (maxSize.second > tmp1) surfaceSize = new Pair<>(maxSize.first, tmp1);
-      // 竖向最大不会超出
-    else surfaceSize = new Pair<>(videoSize.first * maxSize.second / videoSize.second, maxSize.second);
+    surfaceSize = new Pair<>(maxSize.first, maxSize.second);
     // 更新大小
     ViewGroup.LayoutParams layoutParams = textureView.getLayoutParams();
     layoutParams.width = surfaceSize.first;
@@ -270,11 +247,7 @@ public class ClientView implements TextureView.SurfaceTextureListener {
     textureView.setLayoutParams(layoutParams);
   }
   public void reCalculateTextureViewSize(int width, int height) {
-    surfaceSize = new Pair<>(width, height);
-    ViewGroup.LayoutParams layoutParams = textureView.getLayoutParams();
-    layoutParams.width = width;
-    layoutParams.height = height;
-    textureView.setLayoutParams(layoutParams);
+    reCalculateTextureViewSize();
   }
 
   // 设置视频区域触摸监听

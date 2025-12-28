@@ -9,9 +9,12 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Pair;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.view.Surface;
 import android.view.View;
@@ -39,11 +42,13 @@ public class Client {
   public Adb adb;
   private BufferStream bufferStream;
   private BufferStream videoStream;
+  private BufferStream audioStream;
   private BufferStream shell;
 
   // 子服务
   private final Thread executeStreamInThread = new Thread(this::executeStreamIn);
   private final Thread executeStreamVideoThread = new Thread(this::executeStreamVideo);
+  private final Thread executeStreamAudioThread = new Thread(this::executeStreamAudio);
   private HandlerThread handlerThread;
   private Handler handler;
   private VideoDecode videoDecode;
@@ -60,7 +65,14 @@ public class Client {
   private long lastKeepAliveTime;
   public int multiLink = 0; // 0为单连接，1为多连接主，2为多连接从
 
-  private static final String serverName = "/data/local/tmp/easycontrol_for_car_server_" + BuildConfig.VERSION_CODE + ".jar";
+  private static final Pattern firstIntPattern = Pattern.compile("(-?\\d+)");
+
+  private Integer sourceMusicVolume;
+  private boolean sourceVolumeChanged;
+
+  private static final String serverName = "/data/local/tmp/scrcpy-server-v2.3.1.jar";
+  private static final String serverAssetName = "scrcpy-server-v2.3.1.jar";
+  private static final String scrcpyVersion = "2.3.1";
   private static final boolean supportH265 = PublicTools.isDecoderSupport("hevc");
   private static final boolean supportOpus = PublicTools.isDecoderSupport("opus");
 
@@ -86,6 +98,7 @@ public class Client {
       status = 1;
       executeStreamInThread.start();
       executeStreamVideoThread.start();
+      executeStreamAudioThread.start();
       AppData.uiHandler.post(this::executeOtherService);
     }, () -> release(null));
     Pair<View, WindowManager.LayoutParams> loading = PublicTools.createLoading(AppData.main);
@@ -151,28 +164,116 @@ public class Client {
   private void startServer(Device device) throws Exception {
     if (adb.serverShell == null || adb.serverShell.isClosed()) adb.startServer();
     shell = adb.getShell();
-    int ScreenMode = (AppData.setting.getTurnOnScreenIfStart() ? 1 : 0) * 1000
-            + (AppData.setting.getTurnOffScreenIfStart() ? 1 : 0) * 100
-            + (AppData.setting.getTurnOffScreenIfStop() ? 1 : 0) * 10
-            + (AppData.setting.getTurnOnScreenIfStop() ? 1 : 0);
+
+    String resolvedServerName = serverName;
+    String resolvedServerAssetName = serverAssetName;
+    String resolvedScrcpyVersion = scrcpyVersion;
+    String[] serverAssetCandidates = new String[]{serverAssetName, "scrcpy-server-v3.3.4", "scrcpy-server-v3.3.4.jar"};
+    String[] serverRemoteCandidates = new String[]{serverName, "/data/local/tmp/scrcpy-server-v3.3.4.jar", "/data/local/tmp/scrcpy-server-v3.3.4.jar"};
+    String[] serverVersionCandidates = new String[]{scrcpyVersion, "3.3.4", "3.3.4"};
+    for (int i = 0; i < serverAssetCandidates.length; i++) {
+      try (InputStream assetProbe = AppData.main.getAssets().open(serverAssetCandidates[i])) {
+        resolvedServerAssetName = serverAssetCandidates[i];
+        resolvedServerName = serverRemoteCandidates[i];
+        resolvedScrcpyVersion = serverVersionCandidates[i];
+        break;
+      } catch (Exception e) {
+      }
+    }
+
+    boolean needPush = true;
+    try {
+      String ls = adb.runAdbCmd("ls " + resolvedServerName);
+      needPush = ls == null || !ls.contains(resolvedServerName);
+    } catch (Exception ignored) {
+    }
+    if (needPush) {
+      try (InputStream in = AppData.main.getAssets().open(resolvedServerAssetName)) {
+        adb.pushFile(in, resolvedServerName);
+      }
+    }
+
+    tryMuteSourceDevice();
+
+    String videoCodec = (device.useH265 && supportH265) ? "h265" : "h264";
+    String audioCodec = (device.useOpus && supportOpus) ? "opus" : "aac";
+    int videoBitRate = device.maxVideoBit * 1000000;
+
     StringBuilder cmd = new StringBuilder();
-    cmd.append("app_process -Djava.class.path=").append(serverName).append(" / top.eiyooooo.easycontrol.server.Scrcpy");
-    if (!device.isAudio) cmd.append(" isAudio=0");
-    if (device.maxSize != 1600) cmd.append(" maxSize=").append(device.maxSize);
-    if (device.maxFps != 60) cmd.append(" maxFps=").append(device.maxFps);
-    if (device.maxVideoBit != 4) cmd.append(" maxVideoBit=").append(device.maxVideoBit);
-    if (displayId != 0) cmd.append(" displayId=").append(displayId);
-    if (AppData.setting.getNewMirrorMode()) cmd.append(" mirrorMode=1");
-    if (!AppData.setting.getKeepAwake()) cmd.append(" keepAwake=0");
-    if (ScreenMode != 1001) cmd.append(" ScreenMode=").append(ScreenMode);
-    if (!(device.useH265 && supportH265)) cmd.append(" useH265=0");
-    if (!(device.useOpus && supportOpus)) cmd.append(" useOpus=0");
+    cmd.append("CLASSPATH=").append(resolvedServerName).append(" app_process / com.genymobile.scrcpy.Server ");
+    cmd.append(resolvedScrcpyVersion);
+    cmd.append(" tunnel_forward=true");
+    cmd.append(" send_device_meta=false");
+    cmd.append(" send_frame_meta=true");
+    cmd.append(" send_dummy_byte=false");
+    cmd.append(" send_codec_meta=true");
+    cmd.append(" video=true");
+    cmd.append(" audio=").append(device.isAudio);
+    if (resolvedScrcpyVersion.startsWith("3.")) cmd.append(" audio_dup=false");
+    cmd.append(" control=true");
+    if (device.maxSize != 1600) cmd.append(" max_size=").append(device.maxSize);
+    if (device.maxFps != 60) cmd.append(" max_fps=").append(device.maxFps);
+    if (device.maxVideoBit != 4) cmd.append(" video_bit_rate=").append(videoBitRate);
+    cmd.append(" video_codec=").append(videoCodec);
+    cmd.append(" audio_codec=").append(audioCodec);
+    if (displayId != 0) cmd.append(" display_id=").append(displayId);
+    cmd.append(" stay_awake=").append(AppData.setting.getKeepAwake());
+    cmd.append(" power_on=").append(AppData.setting.getTurnOnScreenIfStart());
+    cmd.append(" power_off_on_close=").append(AppData.setting.getTurnOffScreenIfStop());
+    cmd.append(" clipboard_autosync=").append(clientView.device.clipboardSync);
     cmd.append(" \n");
     shell.write(ByteBuffer.wrap(cmd.toString().getBytes()));
     logger();
   }
 
+  private Integer parseFirstInt(String text) {
+    if (text == null) return null;
+    Matcher matcher = firstIntPattern.matcher(text);
+    if (!matcher.find()) return null;
+    try {
+      return Integer.parseInt(matcher.group(1));
+    } catch (Exception ignored) {
+      return null;
+    }
+  }
+
+  private void tryMuteSourceDevice() {
+    if (!clientView.device.isAudio) return;
+    try {
+      String out = adb.runAdbCmd("cmd media_session volume --get --stream 3");
+      Integer vol = parseFirstInt(out);
+      if (vol != null) sourceMusicVolume = vol;
+    } catch (Exception ignored) {
+    }
+    String[] cmds = new String[]{
+            "cmd media_session volume --set 0 --stream 3",
+            "media volume --set 0 --stream 3"
+    };
+    for (String c : cmds) {
+      try {
+        adb.runAdbCmd(c);
+        sourceVolumeChanged = true;
+      } catch (Exception ignored) {
+      }
+    }
+  }
+
+  private void tryRestoreSourceDeviceVolume() {
+    if (!sourceVolumeChanged || sourceMusicVolume == null) return;
+    String[] cmds = new String[]{
+            "cmd media_session volume --set " + sourceMusicVolume + " --stream 3",
+            "media volume --set " + sourceMusicVolume + " --stream 3"
+    };
+    for (String c : cmds) {
+      try {
+        adb.runAdbCmd(c);
+      } catch (Exception ignored) {
+      }
+    }
+  }
+
   private Thread loggerThread;
+
   private void logger() {
     loggerThread = new Thread(() -> {
       try {
@@ -187,88 +288,17 @@ public class Client {
     loggerThread.start();
   }
 
-  private void tryCreateDisplay(Device device) {
-    try {
-      if (AppData.setting.getForceDesktopMode()) adb.runAdbCmd("settings put global force_desktop_mode_on_external_displays 1");
-      else adb.runAdbCmd("settings put global force_desktop_mode_on_external_displays 0");
-
-      String output = Adb.getStringResponseFromServer(device, "createVirtualDisplay");
-      if (output.contains("success")) {
-        displayId = Integer.parseInt(output.substring(output.lastIndexOf(" -> ") + 4));
-        clientView.displayId = displayId;
-        changeMode(1);
-        PublicTools.logToast(AppData.main.getString(R.string.tip_application_transfer));
-      } else throw new Exception("");
-    } catch (Exception ignored) {
-      changeMode(0);
-      PublicTools.logToast(AppData.main.getString(R.string.error_create_display));
-    }
-  }
-
-  boolean specifiedTransferred = false;
-  private void appTransfer(Device device) {
-    try {
-      JSONArray tasksArray = null;
-      try {
-        JSONObject tasks = new JSONObject(Adb.getStringResponseFromServer(device, "getRecentTasks"));
-        tasksArray = tasks.getJSONArray("data");
-        for (int i = 0; i < tasksArray.length(); i++) {
-          int taskId = tasksArray.getJSONObject(i).getInt("taskId");
-          String topPackage = tasksArray.getJSONObject(i).getString("topPackage");
-          if (taskId <= 0 || topPackage.isEmpty()) {
-            tasksArray.remove(i);
-            i--;
-          }
-        }
-      } catch (Exception ignored) {
-      }
-      if (!specifiedTransferred && !device.specified_app.isEmpty()) {
-        String checkApp = Adb.getStringResponseFromServer(device, "getAppMainActivity", "package=" + device.specified_app);
-        if (checkApp.isEmpty()) {
-          PublicTools.logToast(AppData.main.getString(R.string.error_app_not_found));
-          throw new Exception("");
-        } else {
-          int appTaskId = 0;
-          if (tasksArray != null) {
-            for (int i = 0; i < tasksArray.length(); i++) {
-              if (tasksArray.getJSONObject(i).getString("topPackage").equals(device.specified_app)) {
-                try {
-                  appTaskId = tasksArray.getJSONObject(i).getInt("taskId");
-                } catch (JSONException ignored) {
-                }
-                break;
-              }
-            }
-          }
-          if (appTaskId == 0) {
-            String output = Adb.getStringResponseFromServer(device, "openAppByPackage", "package=" + device.specified_app, "displayId=" + displayId);
-            if (output.contains("failed")) throw new Exception("");
-          } else {
-            String output = adb.runAdbCmd("am display move-stack " + appTaskId + " " + displayId);
-            if (output.contains("Exception")) throw new Exception("");
-          }
-          specifiedTransferred = true;
-        }
-      } else {
-        if (tasksArray != null && tasksArray.length() > 0) {
-          String output = adb.runAdbCmd("am display move-stack " + tasksArray.getJSONObject(0).getInt("taskId") + " " + displayId);
-          if (output.contains("Exception")) throw new Exception("");
-        } else throw new Exception("");
-      }
-    } catch (Exception ignored) {
-      specifiedTransferred = true;
-      changeMode(0);
-      PublicTools.logToast(AppData.main.getString(R.string.error_transfer_app_failed));
-    }
-  }
-
   // 连接Server
   private void connectServer() throws Exception {
     Thread.sleep(50);
     for (int i = 0; i < 60; i++) {
       try {
-        bufferStream = adb.localSocketForward("easycontrol_for_car_scrcpy");
-        videoStream = adb.localSocketForward("easycontrol_for_car_scrcpy");
+        String socketName = "scrcpy";
+        videoStream = adb.localSocketForward(socketName);
+        if (clientView.device.isAudio) {
+          audioStream = adb.localSocketForward(socketName);
+        }
+        bufferStream = adb.localSocketForward(socketName);
         return;
       } catch (Exception ignored) {
         Thread.sleep(50);
@@ -285,16 +315,100 @@ public class Client {
 
   private void executeStreamVideo() {
     try {
-      // 视频流参数
-      boolean useH265 = videoStream.readByte() == 1;
-      Pair<Integer, Integer> videoSize = new Pair<>(videoStream.readInt(), videoStream.readInt());
+      while (status != -1 && videoStream == null) Thread.sleep(50);
+      if (status == -1 || videoStream == null) return;
+
+      int codecId = videoStream.readInt();
+      int width = videoStream.readInt();
+      int height = videoStream.readInt();
+      Pair<Integer, Integer> videoSize = new Pair<>(width, height);
+      controlPacket.setScreenSize(width, height);
+      AppData.uiHandler.post(() -> clientView.updateVideoSize(videoSize));
+
       Surface surface = clientView.getSurface();
-      Pair<byte[], Long> csd0 = new Pair<>(controlPacket.readFrame(videoStream), videoStream.readLong());
-      Pair<byte[], Long> csd1 = useH265 ? null : new Pair<>(controlPacket.readFrame(videoStream), videoStream.readLong());
-      videoDecode = new VideoDecode(videoSize, surface, csd0, csd1, handler);
+
+      final long PACKET_FLAG_CONFIG = 0x8000000000000000L;
+      final long PACKET_FLAG_KEY_FRAME = 0x4000000000000000L;
+
+      byte[] csd0 = null;
+      byte[] csd1 = null;
+
       // 循环处理报文
       while (!Thread.interrupted()) {
-        videoDecode.decodeIn(controlPacket.readFrame(videoStream), videoStream.readLong());
+        long ptsAndFlags = videoStream.readLong();
+        int packetSize = videoStream.readInt();
+        lastKeepAliveTime = System.currentTimeMillis();
+        byte[] data = videoStream.readByteArray(packetSize).array();
+
+        boolean config = (ptsAndFlags & PACKET_FLAG_CONFIG) != 0;
+        long pts = config ? 0 : (ptsAndFlags & ~(PACKET_FLAG_CONFIG | PACKET_FLAG_KEY_FRAME));
+
+        if (videoDecode == null) {
+          if (!config) continue;
+
+          int h264Id = 0x68323634;
+          int h265Id = 0x68323635;
+          boolean isH265 = codecId == h265Id;
+
+          byte[] sps = null;
+          byte[] pps = null;
+          byte[] vps = null;
+
+          int i = 0;
+          while (i < data.length) {
+            int start = findAnnexBStartCode(data, i);
+            if (start < 0) break;
+            int prefixLen = (start + 2 < data.length && data[start] == 0 && data[start + 1] == 0 && data[start + 2] == 1) ? 3 : 4;
+            int next = findAnnexBStartCode(data, start + prefixLen);
+            if (next < 0) next = data.length;
+            int nalHeaderIndex = start + prefixLen;
+            if (nalHeaderIndex >= next) {
+              i = next;
+              continue;
+            }
+
+            int nalType;
+            if (isH265) {
+              nalType = (data[nalHeaderIndex] >> 1) & 0x3F;
+            } else {
+              nalType = data[nalHeaderIndex] & 0x1F;
+            }
+
+            byte[] nal = new byte[next - start];
+            System.arraycopy(data, start, nal, 0, nal.length);
+
+            if (!isH265) {
+              if (nalType == 7) sps = nal;
+              else if (nalType == 8) pps = nal;
+            } else {
+              if (nalType == 32) vps = nal;
+              else if (nalType == 33) sps = nal;
+              else if (nalType == 34) pps = nal;
+            }
+
+            i = next;
+          }
+
+          if (isH265) {
+            ByteBuffer csdBuf = ByteBuffer.allocate((vps != null ? vps.length : 0) + (sps != null ? sps.length : 0) + (pps != null ? pps.length : 0));
+            if (vps != null) csdBuf.put(vps);
+            if (sps != null) csdBuf.put(sps);
+            if (pps != null) csdBuf.put(pps);
+            csd0 = csdBuf.array();
+            csd1 = null;
+          } else {
+            csd0 = sps != null ? sps : data;
+            csd1 = pps;
+          }
+
+          videoDecode = new VideoDecode(videoSize, surface, new Pair<>(csd0, 0L), csd1 == null ? null : new Pair<>(csd1, 0L), handler);
+          continue;
+        }
+
+        if (config) {
+          continue;
+        }
+        videoDecode.decodeIn(data, pts);
       }
     } catch (Exception e) {
       L.log(uuid, e);
@@ -304,37 +418,78 @@ public class Client {
 
   private void executeStreamIn() {
     try {
-      // 音频流参数
-      boolean useOpus = true;
-      if (bufferStream.readByte() == 1) useOpus = bufferStream.readByte() == 1;
-      // 循环处理报文
+      while (status != -1 && bufferStream == null) Thread.sleep(50);
+      if (status == -1 || bufferStream == null) return;
+
       while (!Thread.interrupted()) {
-        switch (bufferStream.readByte()) {
-          case AUDIO_EVENT:
-            byte[] audioFrame = controlPacket.readFrame(bufferStream);
-            if (audioDecode != null) audioDecode.decodeIn(audioFrame);
-            else {
-              audioDecode = new AudioDecode(useOpus, audioFrame, handler);
-              if (multiLink != 2) playAudio(true);
-            }
-            break;
-          case CLIPBOARD_EVENT:
-            controlPacket.nowClipboardText = new String(bufferStream.readByteArray(bufferStream.readInt()).array());
-            if (clientView.device.clipboardSync) AppData.clipBoard.setPrimaryClip(ClipData.newPlainText(MIMETYPE_TEXT_PLAIN, controlPacket.nowClipboardText));
-            break;
-          case CHANGE_SIZE_EVENT:
-            Pair<Integer, Integer> newVideoSize = new Pair<>(bufferStream.readInt(), bufferStream.readInt());
-            AppData.uiHandler.post(() -> clientView.updateVideoSize(newVideoSize));
-            break;
-          case KEEP_ALIVE_EVENT:
-            lastKeepAliveTime = System.currentTimeMillis();
-            break;
+        byte type = bufferStream.readByte();
+        lastKeepAliveTime = System.currentTimeMillis();
+        if (type == 0) {
+          int len = bufferStream.readInt();
+          controlPacket.nowClipboardText = new String(bufferStream.readByteArray(len).array(), StandardCharsets.UTF_8);
+          if (clientView.device.clipboardSync) {
+            AppData.clipBoard.setPrimaryClip(ClipData.newPlainText(MIMETYPE_TEXT_PLAIN, controlPacket.nowClipboardText));
+          }
+        } else if (type == 1) {
+          bufferStream.readLong();
         }
       }
     } catch (Exception e) {
       L.log(uuid, e);
       release(AppData.main.getString(R.string.log_notify));
     }
+  }
+
+  private void executeStreamAudio() {
+    try {
+      while (status != -1 && audioStream == null) Thread.sleep(50);
+      if (status == -1 || audioStream == null) return;
+
+      int codecId = audioStream.readInt();
+      if (codecId <= 1) {
+        return;
+      }
+      boolean useOpus = codecId == 0x6f707573;
+
+      final long PACKET_FLAG_CONFIG = 0x8000000000000000L;
+      final long PACKET_FLAG_KEY_FRAME = 0x4000000000000000L;
+
+      byte[] csd0 = null;
+
+      while (!Thread.interrupted()) {
+        long ptsAndFlags = audioStream.readLong();
+        int packetSize = audioStream.readInt();
+        lastKeepAliveTime = System.currentTimeMillis();
+        byte[] data = audioStream.readByteArray(packetSize).array();
+        boolean config = (ptsAndFlags & PACKET_FLAG_CONFIG) != 0;
+
+        if (audioDecode == null) {
+          if (!config) continue;
+          csd0 = data;
+          audioDecode = new AudioDecode(useOpus, csd0, handler);
+          if (multiLink != 2) playAudio(true);
+          continue;
+        }
+
+        if (config) {
+          continue;
+        }
+        audioDecode.decodeIn(data);
+      }
+    } catch (Exception e) {
+      L.log(uuid, e);
+      release(AppData.main.getString(R.string.log_notify));
+    }
+  }
+
+  private static int findAnnexBStartCode(byte[] data, int from) {
+    for (int i = Math.max(0, from); i + 3 < data.length; i++) {
+      if (data[i] == 0 && data[i + 1] == 0) {
+        if (data[i + 2] == 1) return i;
+        if (i + 3 < data.length && data[i + 2] == 0 && data[i + 3] == 1) return i;
+      }
+    }
+    return -1;
   }
 
   private void executeOtherService() {
@@ -367,6 +522,7 @@ public class Client {
       try {
         switch (i) {
           case 0:
+            tryRestoreSourceDeviceVolume();
             if (displayId != 0) {
               Adb.getStringResponseFromServer(clientView.device, "releaseVirtualDisplay", "id=" + displayId);
             }
@@ -399,16 +555,19 @@ public class Client {
             keepAliveThread.interrupt();
             executeStreamInThread.interrupt();
             executeStreamVideoThread.interrupt();
+            executeStreamAudioThread.interrupt();
             if (handlerThread != null) handlerThread.quit();
             break;
           case 4:
             AppData.uiHandler.post(() -> clientView.hide(true));
             break;
           case 5:
-            bufferStream.close();
+            if (bufferStream != null) bufferStream.close();
+            if (videoStream != null) videoStream.close();
+            if (audioStream != null) audioStream.close();
             break;
           case 6:
-            videoDecode.release();
+            if (videoDecode != null) videoDecode.release();
             if (audioDecode != null) audioDecode.release();
             break;
         }

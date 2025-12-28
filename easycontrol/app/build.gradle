@@ -15,10 +15,26 @@ android {
     ndk {
       abiFilters "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
     }
+    externalNativeBuild {
+      cmake {
+        arguments "-DANDROID_STL=c++_shared"
+      }
+    }
   }
 
   viewBinding {
     enabled = true
+  }
+
+  buildFeatures {
+    prefab true
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "src/main/cpp/CMakeLists.txt"
+      version "3.22.1"
+    }
   }
 
   buildTypes {
@@ -44,10 +60,37 @@ android {
     resources.excludes.add("META-INF/*")
   }
 
+  sourceSets {
+    main {
+      assets.srcDirs += ["$buildDir/generated/assets"]
+    }
+  }
+
 }
 
 dependencies {
   implementation 'com.github.MuntashirAkon:libadb-android:3.0.0'
   implementation 'com.github.MuntashirAkon:sun-security-android:1.1'
   implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:4.3'
+  implementation 'com.google.oboe:oboe:1.10.0'
 }
+
+def scrcpyServerVersion = '2.3.1'
+def scrcpyServerUrl = "https://github.com/Genymobile/scrcpy/releases/download/v${scrcpyServerVersion}/scrcpy-server-v${scrcpyServerVersion}"
+def scrcpyServerOutDir = file("$buildDir/generated/assets")
+def scrcpyServerOutFile = file("$buildDir/generated/assets/scrcpy-server-v${scrcpyServerVersion}.jar")
+
+tasks.register('downloadScrcpyServerJar') {
+  outputs.file(scrcpyServerOutFile)
+  doLast {
+    if (scrcpyServerOutFile.exists() && scrcpyServerOutFile.length() > 0) return
+    scrcpyServerOutDir.mkdirs()
+    new URL(scrcpyServerUrl).withInputStream { input ->
+      scrcpyServerOutFile.withOutputStream { output ->
+        output << input
+      }
+    }
+  }
+}
+
+preBuild.dependsOn(tasks.named('downloadScrcpyServerJar'))

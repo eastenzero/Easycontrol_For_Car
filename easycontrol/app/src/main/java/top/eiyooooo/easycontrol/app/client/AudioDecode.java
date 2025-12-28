@@ -3,7 +3,6 @@ package top.eiyooooo.easycontrol.app.client;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.media.audiofx.LoudnessEnhancer;
@@ -19,7 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class AudioDecode {
   public MediaCodec decodec;
-  public AudioTrack audioTrack;
+  public AudioPlayer audioTrack;
   public LoudnessEnhancer loudnessEnhancer;
   private final MediaCodec.Callback callback = new MediaCodec.Callback() {
     @Override
@@ -30,7 +29,13 @@ public class AudioDecode {
 
     @Override
     public void onOutputBufferAvailable(@NonNull MediaCodec mediaCodec, int outIndex, @NonNull MediaCodec.BufferInfo bufferInfo) {
-      audioTrack.write(decodec.getOutputBuffer(outIndex), bufferInfo.size, AudioTrack.WRITE_NON_BLOCKING);
+      ByteBuffer outputBuffer = decodec.getOutputBuffer(outIndex);
+      if (outputBuffer != null && bufferInfo.size > 0) {
+        outputBuffer.position(bufferInfo.offset);
+        outputBuffer.limit(bufferInfo.offset + bufferInfo.size);
+        ByteBuffer slice = outputBuffer.slice();
+        audioTrack.write(slice, bufferInfo.size);
+      }
       decodec.releaseOutputBuffer(outIndex, false);
     }
 
@@ -54,9 +59,7 @@ public class AudioDecode {
 
   public void release() {
     try {
-      audioTrack.stop();
       audioTrack.release();
-      loudnessEnhancer.release();
       decodec.stop();
       decodec.release();
     } catch (Exception ignored) {
@@ -64,11 +67,7 @@ public class AudioDecode {
   }
 
   public void playAudio(boolean play) {
-    if (play) {
-      audioTrack.flush();
-      audioTrack.play();
-    }
-    else audioTrack.pause();
+    audioTrack.setPlaying(play);
   }
 
   private final LinkedBlockingQueue<byte[]> intputDataQueue = new LinkedBlockingQueue<>();
@@ -83,7 +82,11 @@ public class AudioDecode {
     if (intputDataQueue.isEmpty() || intputBufferQueue.isEmpty()) return;
     Integer inIndex = intputBufferQueue.poll();
     byte[] data = intputDataQueue.poll();
-    decodec.getInputBuffer(inIndex).put(data);
+    ByteBuffer inputBuffer = decodec.getInputBuffer(inIndex);
+    if (inputBuffer != null) {
+      inputBuffer.clear();
+      inputBuffer.put(data);
+    }
     decodec.queueInputBuffer(inIndex, 0, data.length, 0, 0);
     checkDecode();
   }
@@ -119,33 +122,11 @@ public class AudioDecode {
   // 创建AudioTrack
   private void setAudioTrack() {
     int sampleRate = 48000;
-    int bufferSize = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT) * 4;
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-      AudioTrack.Builder audioTrackBuild = new AudioTrack.Builder();
-      // 1
-      AudioAttributes.Builder audioAttributesBulider = new AudioAttributes.Builder();
-      audioAttributesBulider.setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE);
-      audioAttributesBulider.setContentType(AudioAttributes.CONTENT_TYPE_UNKNOWN);
-      int audioChannel = AppData.setting.getAudioChannel();
-      if (audioChannel != 0) audioAttributesBulider.setLegacyStreamType(audioChannel);
-      // 2
-      AudioFormat.Builder audioFormat = new AudioFormat.Builder();
-      audioFormat.setEncoding(AudioFormat.ENCODING_PCM_16BIT);
-      audioFormat.setSampleRate(sampleRate);
-      audioFormat.setChannelMask(AudioFormat.CHANNEL_OUT_STEREO);
-      // 3
-      audioTrackBuild.setBufferSizeInBytes(bufferSize);
-      audioTrackBuild.setAudioAttributes(audioAttributesBulider.build());
-      audioTrackBuild.setAudioFormat(audioFormat.build());
-      // 4
-      audioTrack = audioTrackBuild.build();
-    } else audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufferSize, AudioTrack.MODE_STREAM);
+    audioTrack = new AudioPlayer(sampleRate, 2);
   }
 
   // 创建音频放大器
   private void setLoudnessEnhancer() {
-    loudnessEnhancer = new LoudnessEnhancer(audioTrack.getAudioSessionId());
-    loudnessEnhancer.setTargetGain(2000);
-    loudnessEnhancer.setEnabled(true);
+    loudnessEnhancer = null;
   }
 }
