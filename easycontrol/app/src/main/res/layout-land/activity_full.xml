@@ -69,6 +69,15 @@
         android:src="@drawable/rotate"
         android:tint="#DEDEDE" />
 
+      <ImageView
+        android:id="@+id/button_nav_pos"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:focusable="false"
+        android:padding="4dp"
+        android:src="@drawable/chevron_left"
+        android:tint="#DEDEDE" />
+
     </LinearLayout>
 
     <LinearLayout

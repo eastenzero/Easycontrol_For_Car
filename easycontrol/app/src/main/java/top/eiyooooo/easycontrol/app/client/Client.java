@@ -81,6 +81,8 @@ public class Client {
   private static final boolean supportH265 = PublicTools.isDecoderSupport("hevc");
   private static final boolean supportOpus = PublicTools.isDecoderSupport("opus");
 
+  public static boolean isAudioOnly = false;
+
   public Client(Device device, UsbDevice usbDevice, int mode) {
     for (Client client : allClient) {
       if (client.uuid.equals(device.uuid)) {
@@ -102,8 +104,8 @@ public class Client {
     clientView = new ClientView(device, controlPacket, this::changeMode, () -> {
       status = 1;
       executeStreamInThread.start();
-      executeStreamVideoThread.start();
-      executeStreamAudioThread.start();
+      if (!isAudioOnly) executeStreamVideoThread.start();
+      if (clientView.device.isAudio || isAudioOnly) executeStreamAudioThread.start();
       AppData.uiHandler.post(this::executeOtherService);
     }, () -> release(null));
     Pair<View, WindowManager.LayoutParams> loading = PublicTools.createLoading(AppData.main);
@@ -136,6 +138,7 @@ public class Client {
         changeMultiLinkMode(multiLink);
         startServer(device);
         connectServer();
+        if (isAudioOnly) initControlScreenSizeFromDevice(device);
         AppData.uiHandler.post(() -> {
           if (device.nightModeSync) controlPacket.sendNightModeEvent(AppData.nightMode);
           if (AppData.setting.getAlwaysFullMode() || device.defaultFull) clientView.changeToFull();
@@ -246,8 +249,8 @@ public class Client {
     cmd.append(" send_frame_meta=true");
     cmd.append(" send_dummy_byte=false");
     cmd.append(" send_codec_meta=true");
-    cmd.append(" video=true");
-    cmd.append(" audio=").append(device.isAudio);
+    cmd.append(" video=").append(!isAudioOnly);
+    cmd.append(" audio=").append(isAudioOnly || device.isAudio);
     if (resolvedScrcpyVersion.startsWith("3.")) cmd.append(" audio_dup=false");
     cmd.append(" control=true");
     cmd.append(" show_touches=true");
@@ -316,7 +319,7 @@ public class Client {
   }
 
   private void tryMuteSourceDevice() {
-    if (!clientView.device.isAudio) return;
+    if (!(clientView.device.isAudio || isAudioOnly)) return;
     try {
       String out = adb.runAdbCmd("cmd media_session volume --get --stream 3");
       Integer vol = parseFirstInt(out);
@@ -372,10 +375,8 @@ public class Client {
     for (int i = 0; i < 60; i++) {
       try {
         String socketName = "scrcpy";
-        videoStream = adb.localSocketForward(socketName);
-        if (clientView.device.isAudio) {
-          audioStream = adb.localSocketForward(socketName);
-        }
+        if (!isAudioOnly) videoStream = adb.localSocketForward(socketName);
+        if (clientView.device.isAudio || isAudioOnly) audioStream = adb.localSocketForward(socketName);
         bufferStream = adb.localSocketForward(socketName);
         return;
       } catch (Exception ignored) {
@@ -383,6 +384,41 @@ public class Client {
       }
     }
     throw new Exception(AppData.main.getString(R.string.error_connect_server));
+  }
+
+  private void initControlScreenSizeFromDevice(Device device) {
+    try {
+      String out = Adb.getStringResponseFromServer(device, "getDisplayInfo");
+      if (out == null || out.isEmpty()) return;
+      JSONArray arr = new JSONArray(out);
+      if (arr.length() <= 0) return;
+
+      JSONObject target = null;
+      for (int i = 0; i < arr.length(); i++) {
+        JSONObject obj = arr.getJSONObject(i);
+        int id = obj.optInt("id", 0);
+        if (id == displayId) {
+          target = obj;
+          break;
+        }
+      }
+      if (target == null) {
+        for (int i = 0; i < arr.length(); i++) {
+          JSONObject obj = arr.getJSONObject(i);
+          int id = obj.optInt("id", 0);
+          if (id == 0) {
+            target = obj;
+            break;
+          }
+        }
+      }
+      if (target == null) target = arr.getJSONObject(0);
+
+      int w = target.optInt("width", 0);
+      int h = target.optInt("height", 0);
+      if (w > 0 && h > 0) controlPacket.setScreenSize(w, h);
+    } catch (Exception ignored) {
+    }
   }
 
   // 服务分发

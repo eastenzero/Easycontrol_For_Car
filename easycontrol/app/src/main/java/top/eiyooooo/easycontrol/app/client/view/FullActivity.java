@@ -11,8 +11,11 @@ import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Pair;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import top.eiyooooo.easycontrol.app.helper.PublicTools;
@@ -51,9 +54,34 @@ public class FullActivity extends Activity implements SensorEventListener {
     // 更新textureView
     fullActivity.textureViewLayout.addView(clientView.textureView, 0);
     setNavBarHide(AppData.setting.getDefaultShowNavBar());
+    applyNavBarPosition();
     changeMode(-clientView.mode);
     // 页面自动旋转
     AppData.sensorManager.registerListener(this, AppData.sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+  }
+
+  private void applyNavBarPosition() {
+    boolean left = AppData.setting.getNavBarLeft();
+    try {
+      fullActivity.buttonNavPos.setRotation(left ? 180f : 0f);
+    } catch (Exception ignored) {
+    }
+
+    try {
+      ViewGroup parent = (ViewGroup) fullActivity.navBar.getParent();
+      if (parent instanceof LinearLayout && ((LinearLayout) parent).getOrientation() == LinearLayout.HORIZONTAL) {
+        parent.removeView(fullActivity.navBar);
+        if (left) parent.addView(fullActivity.navBar, 0);
+        else parent.addView(fullActivity.navBar);
+      }
+    } catch (Exception ignored) {
+    }
+
+    try {
+      int g = (left ? Gravity.START : Gravity.END) | Gravity.CENTER_VERTICAL;
+      fullActivity.navBar.setGravity(g);
+    } catch (Exception ignored) {
+    }
   }
 
   public Pair<Integer, Integer> fullMaxSize;
@@ -122,6 +150,11 @@ public class FullActivity extends Activity implements SensorEventListener {
     });
     fullActivity.buttonNavBar.setOnClickListener(v -> {
       setNavBarHide(fullActivity.navBar.getVisibility() == View.GONE);
+      barViewTimer();
+    });
+    fullActivity.buttonNavPos.setOnClickListener(v -> {
+      AppData.setting.setNavBarLeft(!AppData.setting.getNavBarLeft());
+      applyNavBarPosition();
       barViewTimer();
     });
     if (!AppData.setting.getAlwaysFullMode()) {

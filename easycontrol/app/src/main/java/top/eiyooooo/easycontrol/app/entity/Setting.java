@@ -25,6 +25,24 @@ public final class Setting {
     editor.apply();
   }
 
+  public boolean getAudioOnly() {
+    return sharedPreferences.getBoolean("audioOnly", false);
+  }
+
+  public void setAudioOnly(boolean value) {
+    editor.putBoolean("audioOnly", value);
+    editor.apply();
+  }
+
+  public boolean getNavBarLeft() {
+    return sharedPreferences.getBoolean("navBarLeft", false);
+  }
+
+  public void setNavBarLeft(boolean value) {
+    editor.putBoolean("navBarLeft", value);
+    editor.apply();
+  }
+
   public int getDefaultMaxSize() {
     return sharedPreferences.getInt("defaultMaxSize", 1600);
   }

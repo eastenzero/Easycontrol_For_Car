@@ -9,6 +9,7 @@ import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Pair;
 import android.view.*;
+import android.widget.LinearLayout;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,6 +54,7 @@ public class SmallView extends ViewOutlineProvider {
     smallViewParams.gravity = Gravity.START | Gravity.TOP;
     // 设置默认导航栏状态
     setNavBarHide(AppData.setting.getDefaultShowNavBar());
+    applyNavBarPosition();
     // 获取屏幕宽高
     DisplayMetrics displayMetrics = AppData.main.getResources().getDisplayMetrics();
     int screenWidth = displayMetrics.widthPixels;
@@ -383,6 +385,11 @@ public class SmallView extends ViewOutlineProvider {
       setNavBarHide(smallView.navBar.getVisibility() == View.GONE);
       barViewTimer();
     });
+    smallView.buttonNavPos.setOnClickListener(v -> {
+      AppData.setting.setNavBarLeft(!AppData.setting.getNavBarLeft());
+      applyNavBarPosition();
+      barViewTimer();
+    });
     smallView.buttonMini.setOnClickListener(v -> {
       clientView.changeToMini(0);
       barViewTimer();
@@ -444,6 +451,27 @@ public class SmallView extends ViewOutlineProvider {
   private void setNavBarHide(boolean isShow) {
     smallView.navBar.setVisibility(isShow ? View.VISIBLE : View.GONE);
     smallView.buttonNavBar.setImageResource(isShow ? R.drawable.not_equal : R.drawable.equals);
+  }
+
+  private void applyNavBarPosition() {
+    boolean left = AppData.setting.getNavBarLeft();
+    try {
+      smallView.buttonNavPos.setRotation(left ? 180f : 0f);
+    } catch (Exception ignored) {
+    }
+    try {
+      smallView.navBar.setGravity((left ? Gravity.START : Gravity.END) | Gravity.CENTER_VERTICAL);
+    } catch (Exception ignored) {
+    }
+    try {
+      LinearLayout.LayoutParams lpStart = (LinearLayout.LayoutParams) smallView.navSpaceStart.getLayoutParams();
+      lpStart.weight = left ? 0f : 1f;
+      smallView.navSpaceStart.setLayoutParams(lpStart);
+      LinearLayout.LayoutParams lpEnd = (LinearLayout.LayoutParams) smallView.navSpaceEnd.getLayoutParams();
+      lpEnd.weight = left ? 1f : 0f;
+      smallView.navSpaceEnd.setLayoutParams(lpEnd);
+    } catch (Exception ignored) {
+    }
   }
 
   private void changeBarView() {

@@ -55,6 +55,8 @@
   <string name="set_other">其他</string>
   <string name="set_audio_channel">音频输出声道</string>
   <string name="set_audio_channel_detail">没有特殊需要请保持0声道</string>
+  <string name="set_audio_only_mode">Audio Only Mode (Black Screen)</string>
+  <string name="set_audio_only_mode_detail">Disable video stream, keep control enabled</string>
   <string name="set_enable_usb">启用USB设备检测</string>
   <string name="set_enable_usb_detail">若不希望使用有线连接，可关闭</string>
   <string name="set_set_full_screen">沉浸式全屏模式</string>
@@ -215,6 +217,7 @@
   <string name="option_default_full_detail">开启后在连接成功后直接进入全屏状态</string>
   <string name="option_set_resolution">应用流转宽高比例自由缩放</string>
   <string name="option_set_resolution_detail">开启后应用流转宽高比例可自由设置</string>
+  <string name="option_audio_only">仅音频(黑屏)</string>
 
   <!-- 设备列表展开 -->
   <string name="start_display_mirroring">屏幕镜像</string>

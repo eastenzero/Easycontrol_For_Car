@@ -316,6 +316,7 @@ public class DeviceListAdapter extends BaseExpandableListAdapter {
   }
 
   public static void startDevice(Device device, int mode) {
+    Client.isAudioOnly = AppData.setting.getAudioOnly();
     if (device.isLinkDevice()) {
       UsbDevice usbDevice = linkDevices.get(device.uuid);
       if (usbDevice == null) return;
