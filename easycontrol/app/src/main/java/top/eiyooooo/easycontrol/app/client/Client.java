@@ -11,6 +11,8 @@ import android.util.Log;
 import android.util.Pair;
 
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -129,6 +131,7 @@ public class Client {
     startThread = new Thread(() -> {
       try {
         adb = connectADB(device, usbDevice);
+        enableTcpNoDelay(adb);
         changeMode(mode);
         changeMultiLinkMode(multiLink);
         startServer(device);
@@ -161,6 +164,24 @@ public class Client {
     else adb = new Adb(device.uuid, usbDevice, AppData.keyPair);
     Adb.adbMap.put(device.uuid, adb);
     return adb;
+  }
+
+  private static void enableTcpNoDelay(Adb adb) {
+    if (adb == null) return;
+    try {
+      Field channelField = Adb.class.getDeclaredField("channel");
+      channelField.setAccessible(true);
+      Object channel = channelField.get(adb);
+      if (channel == null) return;
+
+      Field socketField = channel.getClass().getDeclaredField("socket");
+      socketField.setAccessible(true);
+      Object socket = socketField.get(channel);
+      if (socket instanceof Socket) {
+        ((Socket) socket).setTcpNoDelay(true);
+      }
+    } catch (Exception ignored) {
+    }
   }
 
   // 启动Server
@@ -229,6 +250,7 @@ public class Client {
     cmd.append(" audio=").append(device.isAudio);
     if (resolvedScrcpyVersion.startsWith("3.")) cmd.append(" audio_dup=false");
     cmd.append(" control=true");
+    cmd.append(" show_touches=true");
     if (device.maxSize != 1600) cmd.append(" max_size=").append(device.maxSize);
     if (device.maxFps != 60) cmd.append(" max_fps=").append(device.maxFps);
     if (device.maxVideoBit != 4) cmd.append(" video_bit_rate=").append(videoBitRate);
