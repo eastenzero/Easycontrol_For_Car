@@ -65,6 +65,8 @@ public class Client {
   private long lastKeepAliveTime;
   public int multiLink = 0; // 0为单连接，1为多连接主，2为多连接从
 
+  private boolean specifiedTransferred;
+
   private static final Pattern firstIntPattern = Pattern.compile("(-?\\d+)");
 
   private Integer sourceMusicVolume;
@@ -224,6 +226,44 @@ public class Client {
     cmd.append(" \n");
     shell.write(ByteBuffer.wrap(cmd.toString().getBytes()));
     logger();
+  }
+
+  private void tryCreateDisplay(Device device) {
+    if (displayId != 0) return;
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+    try {
+      String output = Adb.getStringResponseFromServer(device, "createVirtualDisplay");
+      Matcher matcher = firstIntPattern.matcher(output);
+      if (matcher.find()) {
+        displayId = Integer.parseInt(matcher.group(1));
+        clientView.displayId = displayId;
+      }
+    } catch (Exception ignored) {
+    }
+  }
+
+  private void appTransfer(Device device) {
+    if (specifiedTransferred) return;
+    if (displayId == 0) return;
+    String specifiedApp = device.specified_app;
+    if (specifiedApp == null || specifiedApp.isEmpty()) {
+      specifiedTransferred = true;
+      return;
+    }
+    String packageName = specifiedApp;
+    if (specifiedApp.contains("@")) {
+      String[] parts = specifiedApp.split("@");
+      if (parts.length > 0) packageName = parts[parts.length - 1];
+    }
+    if (packageName == null || packageName.isEmpty()) {
+      specifiedTransferred = true;
+      return;
+    }
+    try {
+      String output = Adb.getStringResponseFromServer(device, "openAppByPackage", "package=" + packageName, "displayId=" + displayId);
+      if (output != null && output.contains("success")) specifiedTransferred = true;
+    } catch (Exception ignored) {
+    }
   }
 
   private Integer parseFirstInt(String text) {
