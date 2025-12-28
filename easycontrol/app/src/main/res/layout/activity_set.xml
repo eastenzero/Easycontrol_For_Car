@@ -3,17 +3,41 @@
   xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
-  android:background="@color/background"
+  android:background="@drawable/bg_app_liquid"
+  android:fitsSystemWindows="true"
   android:orientation="vertical"
   tools:context=".SetActivity">
 
-  <ImageView
-    android:id="@+id/back_button"
-    android:layout_width="54dp"
-    android:layout_height="54dp"
-    android:padding="15dp"
-    android:src="@drawable/chevron_left"
-    android:tint="@color/onBackground" />
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingTop="24dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="16dp">
+
+    <ImageView
+      android:id="@+id/back_button"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_marginEnd="12dp"
+      android:background="@drawable/bg_glass_button"
+      android:padding="12dp"
+      android:src="@drawable/chevron_left"
+      android:tint="@color/glass_text_secondary" />
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:includeFontPadding="false"
+      android:text="Settings"
+      android:textColor="@color/glass_accent"
+      android:textSize="24sp"
+      android:textStyle="bold" />
+
+  </LinearLayout>
 
   <ScrollView
     android:layout_width="match_parent"
@@ -23,25 +47,26 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:orientation="vertical"
-      android:paddingStart="15dp"
-      android:paddingEnd="15dp">
+      android:paddingStart="16dp"
+      android:paddingEnd="16dp">
 
       <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
+        android:layout_marginStart="8dp"
         android:layout_marginBottom="5dp"
         android:text="@string/set_default"
-        android:textColor="@color/onBackground"
+        android:textColor="@color/glass_text_secondary"
         android:textSize="@dimen/middleFont" />
 
       <LinearLayout
         android:id="@+id/set_default"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/background_cron"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_glass_card"
         android:orientation="vertical"
-        android:padding="15dp"
+        android:padding="16dp"
         android:divider="@drawable/divider_line"
         android:dividerPadding="5dp"
         android:showDividers="middle" />
@@ -49,20 +74,21 @@
       <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="5dp"
         android:text="@string/set_display"
-        android:textColor="@color/onBackground"
+        android:textColor="@color/glass_text_secondary"
         android:textSize="@dimen/middleFont" />
 
       <LinearLayout
         android:id="@+id/set_display"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/background_cron"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_glass_card"
         android:orientation="vertical"
-        android:padding="15dp"
+        android:padding="16dp"
         android:divider="@drawable/divider_line"
         android:dividerPadding="5dp"
         android:showDividers="middle" />
@@ -70,20 +96,21 @@
       <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="5dp"
         android:text="@string/set_other"
-        android:textColor="@color/onBackground"
+        android:textColor="@color/glass_text_secondary"
         android:textSize="@dimen/middleFont" />
 
       <LinearLayout
         android:id="@+id/set_other"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/background_cron"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_glass_card"
         android:orientation="vertical"
-        android:padding="15dp"
+        android:padding="16dp"
         android:divider="@drawable/divider_line"
         android:dividerPadding="5dp"
         android:showDividers="middle" />
@@ -92,11 +119,11 @@
         android:id="@+id/text_about"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="5dp"
         android:text="@string/set_about"
-        android:textColor="@color/onBackground"
+        android:textColor="@color/glass_text_secondary"
         android:textSize="@dimen/middleFont" />
 
       <LinearLayout
@@ -104,9 +131,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="25dp"
-        android:background="@drawable/background_cron"
+        android:background="@drawable/bg_glass_card"
         android:orientation="vertical"
-        android:padding="15dp"
+        android:padding="16dp"
         android:divider="@drawable/divider_line"
         android:dividerPadding="5dp"
         android:showDividers="middle" />

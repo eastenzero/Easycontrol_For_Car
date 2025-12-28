@@ -4,20 +4,20 @@
   xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="match_parent"
   android:layout_height="wrap_content"
-  android:background="@drawable/background_cron"
+  android:background="@drawable/bg_glass_card"
   android:gravity="center"
   android:orientation="horizontal"
-  android:paddingStart="12dp"
-  android:paddingTop="10dp"
-  android:paddingEnd="12dp"
-  android:paddingBottom="10dp">
+  android:paddingStart="16dp"
+  android:paddingTop="14dp"
+  android:paddingEnd="16dp"
+  android:paddingBottom="14dp">
 
   <ImageView
     android:id="@+id/device_icon"
     android:layout_width="26dp"
     android:layout_height="26dp"
     android:src="@drawable/wifi_checking_connection"
-    android:tint="@color/onCardBackground" />
+    android:tint="@color/glass_accent" />
 
   <TextView
     android:id="@+id/device_name"
@@ -29,8 +29,9 @@
     android:includeFontPadding="false"
     android:maxLines="1"
     android:text="设备1"
-    android:textColor="@color/onCardBackground"
-    android:textSize="@dimen/largeFont"
+    android:textColor="@color/glass_text_primary"
+    android:textSize="18sp"
+    android:textStyle="bold"
     tools:ignore="HardcodedText" />
 
   <ImageView
@@ -39,6 +40,6 @@
     android:layout_height="24dp"
     android:rotation="180"
     android:src="@drawable/chevron_left"
-    android:tint="@color/onCardBackground" />
+    android:tint="@color/glass_text_secondary" />
 
 </LinearLayout>

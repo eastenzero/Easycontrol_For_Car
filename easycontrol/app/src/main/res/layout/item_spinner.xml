@@ -3,7 +3,7 @@
   xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="match_parent"
   android:layout_height="wrap_content"
-  android:background="@color/cardBackground"
+  android:background="@android:color/transparent"
   android:gravity="center_vertical"
   android:orientation="vertical"
   android:paddingTop="6dp"
@@ -19,8 +19,8 @@
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:text="设置项"
-      android:textColor="@color/onCardBackground"
-      android:textSize="@dimen/smallFont"
+      android:textColor="@color/glass_text_primary"
+      android:textSize="16sp"
       tools:ignore="HardcodedText" />
 
     <Spinner
@@ -28,8 +28,9 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_marginStart="10dp"
-      android:backgroundTint="@color/onCardBackground"
-      android:textSize="@dimen/smallFont" />
+      android:backgroundTint="@color/glass_text_secondary"
+      android:spinnerMode="dropdown"
+      android:popupBackground="@color/glass_background" />
   </LinearLayout>
 
   <TextView
@@ -38,7 +39,7 @@
     android:layout_height="wrap_content"
     android:layout_marginStart="10dp"
     android:text="辅助说明"
-    android:textColor="@color/onCardBackgroundSecond"
+    android:textColor="@color/glass_text_secondary"
     android:textSize="@dimen/smallSmallFont"
     tools:ignore="HardcodedText" />
 </LinearLayout>

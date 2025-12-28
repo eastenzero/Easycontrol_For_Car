@@ -41,6 +41,8 @@ public class Client {
   private int status = 0;
   public static final ArrayList<Client> allClient = new ArrayList<>();
 
+  private final Device device;
+
   // 连接
   public Adb adb;
   private BufferStream bufferStream;
@@ -94,6 +96,7 @@ public class Client {
     allClient.add(this);
     if (!EventMonitor.monitorRunning && AppData.setting.getMonitorState()) EventMonitor.startMonitor();
     // 初始化
+    this.device = device;
     uuid = device.uuid;
     if (mode == 0) specifiedTransferred = true;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -319,7 +322,7 @@ public class Client {
   }
 
   private void tryMuteSourceDevice() {
-    if (!(clientView.device.isAudio || isAudioOnly)) return;
+    if (!(this.device.isAudio || isAudioOnly)) return;
     try {
       String out = adb.runAdbCmd("cmd media_session volume --get --stream 3");
       Integer vol = parseFirstInt(out);
@@ -376,7 +379,7 @@ public class Client {
       try {
         String socketName = "scrcpy";
         if (!isAudioOnly) videoStream = adb.localSocketForward(socketName);
-        if (clientView.device.isAudio || isAudioOnly) audioStream = adb.localSocketForward(socketName);
+        if (this.device.isAudio || isAudioOnly) audioStream = adb.localSocketForward(socketName);
         bufferStream = adb.localSocketForward(socketName);
         return;
       } catch (Exception ignored) {

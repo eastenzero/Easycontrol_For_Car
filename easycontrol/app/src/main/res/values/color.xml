@@ -1,24 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <!-- 主界面色彩 -->
-  <color name="background">#F3F4F6</color>
-  <color name="onBackground">#242424</color>
-  <color name="onBackgroundSecond">#636564</color>
-  <color name="cardBackground">#FFFFFF</color>
-  <color name="onCardBackground">#000000</color>
-  <color name="onCardBackgroundSecond">#696969</color>
-  <color name="onCardDivider">#32000000</color>
+  <color name="glass_background">#050505</color>
+  <color name="glass_surface">#1AFFFFFF</color>
+  <color name="glass_surface_highlight">#26FFFFFF</color>
+  <color name="glass_border">#1FFFFFFF</color>
+  <color name="glass_accent">#00F0FF</color>
+  <color name="glass_text_primary">#FFFFFF</color>
+  <color name="glass_text_secondary">#80FFFFFF</color>
+  <color name="glass_danger">#FF2A2A</color>
+
+  <color name="background">#050505</color>
+  <color name="onBackground">#FFFFFF</color>
+  <color name="onBackgroundSecond">#80FFFFFF</color>
+  <color name="cardBackground">#1AFFFFFF</color>
+  <color name="onCardBackground">#FFFFFF</color>
+  <color name="onCardBackgroundSecond">#80FFFFFF</color>
+  <color name="onCardDivider">#1FFFFFFF</color>
 
   <!-- 特殊色彩 -->
-  <color name="button">#2E2E2E</color>
-  <color name="onButton">#E0E0E0</color>
-  <color name="alert">#ca5357</color>
-  <color name="onAlert">#ded8d8</color>
-  <color name="translucent">#000000ff</color>
+  <color name="button">#1AFFFFFF</color>
+  <color name="onButton">#FFFFFF</color>
+  <color name="alert">#FF2A2A</color>
+  <color name="onAlert">#FFFFFF</color>
+  <color name="translucent">#80000000</color>
 
   <!-- 客户端界面色彩 -->
-  <color name="clientBar">#579CF9</color>
-  <color name="clientBarSecond">#c0d1d1d1</color>
+  <color name="clientBar">#00F0FF</color>
+  <color name="clientBarSecond">#2600F0FF</color>
 
   <!-- 迷你界面色彩 -->
   <color name="bar1">#e8b621</color>

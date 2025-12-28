@@ -3,7 +3,7 @@
   xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
-  android:background="#222325"
+  android:background="@color/glass_background"
   android:keepScreenOn="true"
   tools:context=".client.view.FullActivity">
 
@@ -29,74 +29,87 @@
     <LinearLayout
       android:id="@+id/nav_bar"
       android:layout_width="match_parent"
-      android:layout_height="35dp"
+      android:layout_height="wrap_content"
       android:layout_gravity="bottom"
       android:visibility="gone"
+      android:background="@drawable/bg_glass_card"
+      android:elevation="4dp"
       android:gravity="center"
       android:orientation="horizontal"
-      android:paddingEnd="50dp"
-      android:paddingStart="10dp">
+      android:paddingStart="8dp"
+      android:paddingTop="8dp"
+      android:paddingEnd="72dp"
+      android:paddingBottom="8dp">
 
       <ImageView
         android:id="@+id/button_nav_pos"
-        android:layout_width="40dp"
-        android:layout_height="match_parent"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_glass_button"
         android:focusable="false"
-        android:padding="4dp"
+        android:padding="12dp"
         android:src="@drawable/chevron_left"
-        android:tint="#DEDEDE" />
+        android:tint="@color/glass_accent" />
 
       <ImageView
         android:id="@+id/button_rotate"
-        android:layout_width="40dp"
-        android:layout_height="match_parent"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_glass_button"
         android:focusable="false"
-        android:padding="4dp"
+        android:padding="12dp"
         android:src="@drawable/rotate"
-        android:tint="#DEDEDE" />
+        android:tint="@color/glass_text_primary" />
 
       <ImageView
         android:id="@+id/button_switch"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_glass_button"
         android:focusable="false"
-        android:padding="4dp"
+        android:padding="12dp"
         android:src="@drawable/square"
-        android:tint="#DEDEDE" />
+        android:tint="@color/glass_text_primary" />
 
       <ImageView
         android:id="@+id/button_home"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_glass_button"
         android:focusable="false"
-        android:padding="4dp"
+        android:padding="12dp"
         android:src="@drawable/o"
-        android:tint="#DEDEDE" />
+        android:tint="@color/glass_text_primary" />
 
       <ImageView
         android:id="@+id/button_back"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_glass_button"
         android:focusable="false"
-        android:padding="4dp"
+        android:padding="12dp"
         android:src="@drawable/caret_left"
-        android:tint="#DEDEDE" />
+        android:tint="@color/glass_text_primary" />
 
     </LinearLayout>
   </LinearLayout>
 
   <ImageView
     android:id="@+id/button_more"
-    android:layout_width="50dp"
-    android:layout_height="35dp"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
     android:layout_gravity="end|bottom"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="16dp"
+    android:background="@drawable/bg_glass_button"
     android:focusable="false"
-    android:padding="4dp"
+    android:padding="12dp"
     android:src="@drawable/ellipsis_vertical"
-    android:tint="#DEDEDE" />
+    android:tint="@color/glass_text_primary" />
 
   <GridLayout
     android:id="@+id/bar_view"
@@ -104,84 +117,100 @@
     android:layout_height="wrap_content"
     android:layout_gravity="bottom|end"
     android:visibility="gone"
-    android:layout_marginEnd="10dp"
-    android:layout_marginBottom="45dp"
-    android:background="@drawable/background_cron"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="80dp"
+    android:background="@drawable/bg_glass_card"
     android:columnCount="4"
-    android:elevation="6dp"
-    android:padding="8dp">
+    android:elevation="8dp"
+    android:padding="16dp">
 
     <ImageView
       android:id="@+id/button_nav_bar"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/not_equal"
-      android:tint="@color/onCardBackground" />
+      android:tint="@color/glass_text_primary" />
 
     <ImageView
       android:id="@+id/button_mini"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/minus"
-      android:tint="@color/onCardBackground" />
+      android:tint="@color/glass_text_primary" />
 
     <ImageView
       android:id="@+id/button_full_exit"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/compress"
-      android:tint="@color/onCardBackground" />
+      android:tint="@color/glass_text_primary" />
 
     <ImageView
       android:id="@+id/button_close"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/x"
-      android:tint="@color/alert" />
+      android:tint="@color/glass_danger" />
 
     <ImageView
       android:id="@+id/button_transfer"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/share_out"
-      android:tint="@color/onCardBackground" />
+      android:tint="@color/glass_text_primary" />
 
     <ImageView
       android:id="@+id/button_light_off"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/lightbulb_off"
-      android:tint="@color/onCardBackground" />
+      android:tint="@color/glass_text_primary" />
 
     <ImageView
       android:id="@+id/button_power"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/power_off"
-      android:tint="@color/onCardBackground" />
+      android:tint="@color/glass_danger" />
 
     <ImageView
       android:id="@+id/button_lock"
-      android:layout_width="38dp"
-      android:layout_height="38dp"
-      android:layout_margin="4dp"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_margin="8dp"
+      android:background="@drawable/bg_glass_button"
       android:focusable="false"
+      android:padding="12dp"
       android:src="@drawable/lock"
-      android:tint="@color/onCardBackground" />
+      android:tint="@color/glass_text_primary" />
 
   </GridLayout>
 </FrameLayout>
