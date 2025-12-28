@@ -105,7 +105,7 @@ public class Client {
       status = 1;
       executeStreamInThread.start();
       if (!isAudioOnly) executeStreamVideoThread.start();
-      if (clientView.device.isAudio || isAudioOnly) executeStreamAudioThread.start();
+      if (device.isAudio || isAudioOnly) executeStreamAudioThread.start();
       AppData.uiHandler.post(this::executeOtherService);
     }, () -> release(null));
     Pair<View, WindowManager.LayoutParams> loading = PublicTools.createLoading(AppData.main);
