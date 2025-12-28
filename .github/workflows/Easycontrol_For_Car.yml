@@ -1,6 +1,8 @@
 name: Easycontrol_For_Car
 
 on:
+  push:
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:

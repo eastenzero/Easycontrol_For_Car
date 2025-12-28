@@ -195,9 +195,21 @@ public class Client {
       }
     }
 
+    try {
+      String sizeAndLs = adb.runAdbCmd("sh -c '(stat -c %s " + resolvedServerName + " 2>/dev/null || wc -c < " + resolvedServerName + "); ls -l " + resolvedServerName + "'");
+      if (sizeAndLs != null && !sizeAndLs.isEmpty()) {
+        L.logWithoutTime(uuid, sizeAndLs);
+        Integer size = parseFirstInt(sizeAndLs);
+        if (size != null && size < 20000) {
+          L.logWithoutTime(uuid, "scrcpy-server jar too small: " + size);
+        }
+      }
+    } catch (Exception ignored) {
+    }
+
     tryMuteSourceDevice();
 
-    String videoCodec = (device.useH265 && supportH265) ? "h265" : "h264";
+    String videoCodec = "h264";
     String audioCodec = (device.useOpus && supportOpus) ? "opus" : "aac";
     int videoBitRate = device.maxVideoBit * 1000000;
 
@@ -223,7 +235,7 @@ public class Client {
     cmd.append(" power_on=").append(AppData.setting.getTurnOnScreenIfStart());
     cmd.append(" power_off_on_close=").append(AppData.setting.getTurnOffScreenIfStop());
     cmd.append(" clipboard_autosync=").append(clientView.device.clipboardSync);
-    cmd.append(" \n");
+    cmd.append(" 2>&1\n");
     shell.write(ByteBuffer.wrap(cmd.toString().getBytes()));
     logger();
   }
