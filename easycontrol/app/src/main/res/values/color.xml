@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <color name="glass_background">#050505</color>
-  <color name="glass_surface">#1AFFFFFF</color>
+  <color name="glass_surface">#B3000000</color>
   <color name="glass_surface_highlight">#26FFFFFF</color>
   <color name="glass_border">#1FFFFFFF</color>
   <color name="glass_accent">#00F0FF</color>
@@ -12,13 +12,13 @@
   <color name="background">#050505</color>
   <color name="onBackground">#FFFFFF</color>
   <color name="onBackgroundSecond">#80FFFFFF</color>
-  <color name="cardBackground">#1AFFFFFF</color>
+  <color name="cardBackground">#B3000000</color>
   <color name="onCardBackground">#FFFFFF</color>
   <color name="onCardBackgroundSecond">#80FFFFFF</color>
   <color name="onCardDivider">#1FFFFFFF</color>
 
   <!-- 特殊色彩 -->
-  <color name="button">#1AFFFFFF</color>
+  <color name="button">#B3000000</color>
   <color name="onButton">#FFFFFF</color>
   <color name="alert">#FF2A2A</color>
   <color name="onAlert">#FFFFFF</color>

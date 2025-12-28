@@ -137,6 +137,7 @@ public class Client {
       try {
         adb = connectADB(device, usbDevice);
         enableTcpNoDelay(adb);
+        tryEnableShowTouches(adb);
         changeMode(mode);
         changeMultiLinkMode(multiLink);
         startServer(device);
@@ -186,6 +187,14 @@ public class Client {
       if (socket instanceof Socket) {
         ((Socket) socket).setTcpNoDelay(true);
       }
+    } catch (Exception ignored) {
+    }
+  }
+
+  private static void tryEnableShowTouches(Adb adb) {
+    if (adb == null) return;
+    try {
+      adb.runAdbCmd("settings put system show_touches 1");
     } catch (Exception ignored) {
     }
   }

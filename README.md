@@ -4,7 +4,7 @@
 >
 > 基于 Scrcpy 核心，专为车载环境打造的“液态玻璃”风格高性能控制客户端。
 
-[在此处插入一张新的主界面截图]
+<img src="pic\Screenshot_2025-12-29-05-24-27-928_top.eiyooooo.e.jpg">
 
 ## 📖 项目简介 | Introduction
 
