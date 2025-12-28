@@ -73,9 +73,9 @@ public class Client {
   private Integer sourceMusicVolume;
   private boolean sourceVolumeChanged;
 
-  private static final String serverName = "/data/local/tmp/scrcpy-server-v2.3.1.jar";
-  private static final String serverAssetName = "scrcpy-server-v2.3.1.jar";
-  private static final String scrcpyVersion = "2.3.1";
+  private static final String serverName = "/data/local/tmp/scrcpy-server-v3.1.jar";
+  private static final String serverAssetName = "scrcpy-server-v3.1.jar";
+  private static final String scrcpyVersion = "3.1";
   private static final boolean supportH265 = PublicTools.isDecoderSupport("hevc");
   private static final boolean supportOpus = PublicTools.isDecoderSupport("opus");
 
@@ -171,9 +171,9 @@ public class Client {
     String resolvedServerName = serverName;
     String resolvedServerAssetName = serverAssetName;
     String resolvedScrcpyVersion = scrcpyVersion;
-    String[] serverAssetCandidates = new String[]{serverAssetName, "scrcpy-server-v3.3.4", "scrcpy-server-v3.3.4.jar"};
-    String[] serverRemoteCandidates = new String[]{serverName, "/data/local/tmp/scrcpy-server-v3.3.4.jar", "/data/local/tmp/scrcpy-server-v3.3.4.jar"};
-    String[] serverVersionCandidates = new String[]{scrcpyVersion, "3.3.4", "3.3.4"};
+    String[] serverAssetCandidates = new String[]{serverAssetName, "scrcpy-server-v3.1", "scrcpy-server-v3.3.4", "scrcpy-server-v3.3.4.jar"};
+    String[] serverRemoteCandidates = new String[]{serverName, "/data/local/tmp/scrcpy-server-v3.1.jar", "/data/local/tmp/scrcpy-server-v3.3.4.jar", "/data/local/tmp/scrcpy-server-v3.3.4.jar"};
+    String[] serverVersionCandidates = new String[]{scrcpyVersion, "3.1", "3.3.4", "3.3.4"};
     for (int i = 0; i < serverAssetCandidates.length; i++) {
       try (InputStream assetProbe = AppData.main.getAssets().open(serverAssetCandidates[i])) {
         resolvedServerAssetName = serverAssetCandidates[i];
