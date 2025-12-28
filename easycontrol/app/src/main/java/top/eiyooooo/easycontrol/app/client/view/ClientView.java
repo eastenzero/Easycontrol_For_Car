@@ -261,8 +261,20 @@ public class ClientView implements TextureView.SurfaceTextureListener {
         int i = event.getActionIndex();
         pointerDownTime[i] = event.getEventTime();
         createTouchPacket(event, MotionEvent.ACTION_DOWN, i);
-      } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) createTouchPacket(event, MotionEvent.ACTION_UP, event.getActionIndex());
-      else for (int i = 0; i < event.getPointerCount(); i++) createTouchPacket(event, MotionEvent.ACTION_MOVE, i);
+      } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
+        createTouchPacket(event, MotionEvent.ACTION_UP, event.getActionIndex());
+      } else if (action == MotionEvent.ACTION_MOVE) {
+        int historySize = event.getHistorySize();
+        for (int h = 0; h < historySize; h++) {
+          long t = event.getHistoricalEventTime(h);
+          for (int i = 0; i < event.getPointerCount(); i++) {
+            createTouchPacket(event, MotionEvent.ACTION_MOVE, i, event.getHistoricalX(i, h), event.getHistoricalY(i, h), t);
+          }
+        }
+        for (int i = 0; i < event.getPointerCount(); i++) createTouchPacket(event, MotionEvent.ACTION_MOVE, i);
+      } else {
+        for (int i = 0; i < event.getPointerCount(); i++) createTouchPacket(event, MotionEvent.ACTION_MOVE, i);
+      }
       return true;
     });
   }
@@ -271,9 +283,13 @@ public class ClientView implements TextureView.SurfaceTextureListener {
   private final long[] pointerDownTime = new long[10];
 
   private void createTouchPacket(MotionEvent event, int action, int i) {
-    int offsetTime = (int) (event.getEventTime() - pointerDownTime[i]);
-    int x = (int) event.getX(i);
-    int y = (int) event.getY(i);
+    createTouchPacket(event, action, i, event.getX(i), event.getY(i), event.getEventTime());
+  }
+
+  private void createTouchPacket(MotionEvent event, int action, int i, float xf, float yf, long eventTime) {
+    int offsetTime = (int) (eventTime - pointerDownTime[i]);
+    int x = (int) xf;
+    int y = (int) yf;
     int p = event.getPointerId(i);
     if (action == MotionEvent.ACTION_MOVE) {
       // 减少发送小范围移动(小于4的圆内不做处理)
