@@ -14,11 +14,13 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
@@ -85,6 +87,13 @@ public class Client {
 
   public static boolean isAudioOnly = false;
 
+  public boolean isMouseMode = true;
+
+  private int controlScreenWidth;
+  private int controlScreenHeight;
+
+  private static final byte SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT = 2;
+
   public Client(Device device, UsbDevice usbDevice, int mode) {
     for (Client client : allClient) {
       if (client.uuid.equals(device.uuid)) {
@@ -104,7 +113,7 @@ public class Client {
       handlerThread.start();
       handler = new Handler(handlerThread.getLooper());
     }
-    clientView = new ClientView(device, controlPacket, this::changeMode, () -> {
+    clientView = new ClientView(device, this, controlPacket, this::changeMode, () -> {
       status = 1;
       executeStreamInThread.start();
       if (!isAudioOnly) executeStreamVideoThread.start();
@@ -428,7 +437,11 @@ public class Client {
 
       int w = target.optInt("width", 0);
       int h = target.optInt("height", 0);
-      if (w > 0 && h > 0) controlPacket.setScreenSize(w, h);
+      if (w > 0 && h > 0) {
+        controlPacket.setScreenSize(w, h);
+        controlScreenWidth = w;
+        controlScreenHeight = h;
+      }
     } catch (Exception ignored) {
     }
   }
@@ -449,6 +462,8 @@ public class Client {
       int height = videoStream.readInt();
       Pair<Integer, Integer> videoSize = new Pair<>(width, height);
       controlPacket.setScreenSize(width, height);
+      controlScreenWidth = width;
+      controlScreenHeight = height;
       AppData.uiHandler.post(() -> clientView.updateVideoSize(videoSize));
 
       Surface surface = clientView.getSurface();
@@ -633,6 +648,56 @@ public class Client {
       L.log(uuid, e);
       release(AppData.main.getString(R.string.log_notify));
     }
+  }
+
+  public void sendMouseEvent(int action, long pointerId, float x, float y, int buttons) {
+    if (controlScreenWidth <= 0 || controlScreenHeight <= 0) return;
+
+    if (x < 0 || x > 1 || y < 0 || y > 1) {
+      if (x < 0) x = 0;
+      if (x > 1) x = 1;
+      if (y < 0) y = 0;
+      if (y > 1) y = 1;
+      action = MotionEvent.ACTION_UP;
+      buttons = 0;
+    }
+
+    int px = (int) (x * controlScreenWidth);
+    int py = (int) (y * controlScreenHeight);
+    if (px < 0) px = 0;
+    if (px > controlScreenWidth - 1) px = controlScreenWidth - 1;
+    if (py < 0) py = 0;
+    if (py > controlScreenHeight - 1) py = controlScreenHeight - 1;
+
+    float pressureFloat = buttons == 0 ? 0f : 1f;
+    short pressure = scFloatToU16fp(pressureFloat);
+
+    int actionButton = 0;
+    if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
+      actionButton = MotionEvent.BUTTON_PRIMARY;
+    }
+
+    ByteBuffer buf = ByteBuffer.allocate(32).order(ByteOrder.BIG_ENDIAN);
+    buf.put(SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT);
+    buf.put((byte) action);
+    buf.putLong(pointerId);
+    buf.putInt(px);
+    buf.putInt(py);
+    buf.putShort((short) controlScreenWidth);
+    buf.putShort((short) controlScreenHeight);
+    buf.putShort(pressure);
+    buf.putInt(actionButton);
+    buf.putInt(buttons);
+    buf.flip();
+    write(buf);
+  }
+
+  private static short scFloatToU16fp(float f) {
+    if (f < 0f) f = 0f;
+    if (f > 1f) f = 1f;
+    int u = (int) (f * 65536f);
+    if (u >= 0xFFFF) u = 0xFFFF;
+    return (short) u;
   }
 
   public void release(String error) {

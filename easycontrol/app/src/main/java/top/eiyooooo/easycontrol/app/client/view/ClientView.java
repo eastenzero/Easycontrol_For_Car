@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ClientView implements TextureView.SurfaceTextureListener {
   public final Device device;
   public final Device deviceOriginal;
+  private final Client client;
   public int mode = 0;
   public int displayId = 0;
   public final ControlPacket controlPacket;
@@ -49,11 +50,12 @@ public class ClientView implements TextureView.SurfaceTextureListener {
   boolean lightState;
   public int multiLink = 0;
 
-  public ClientView(Device device, ControlPacket controlPacket, PublicTools.MyFunctionInt changeMode, PublicTools.MyFunction onReady, PublicTools.MyFunction onClose) {
+  public ClientView(Device device, Client client, ControlPacket controlPacket, PublicTools.MyFunctionInt changeMode, PublicTools.MyFunction onReady, PublicTools.MyFunction onClose) {
     lightState = !AppData.setting.getTurnOffScreenIfStart();
     this.deviceOriginal = device;
     this.device = new Device(device.uuid, device.type);
     Device.copyDevice(device, this.device);
+    this.client = client;
     textureView = new TextureView(AppData.main);
     if (!AppData.setting.getAlwaysFullMode()) {
       smallView = new SmallView(this);
@@ -291,6 +293,19 @@ public class ClientView implements TextureView.SurfaceTextureListener {
     int x = (int) xf;
     int y = (int) yf;
     int p = event.getPointerId(i);
+
+    if (client != null && client.isMouseMode && event.getPointerCount() == 1) {
+      if (i != 0) return;
+      float nx = (float) x / surfaceSize.first;
+      float ny = (float) y / surfaceSize.second;
+
+      client.sendMouseEvent(MotionEvent.ACTION_HOVER_MOVE, -1L, nx, ny, 0);
+
+      int buttons = action == MotionEvent.ACTION_UP ? 0 : MotionEvent.BUTTON_PRIMARY;
+      client.sendMouseEvent(action, -1L, nx, ny, buttons);
+      return;
+    }
+
     if (action == MotionEvent.ACTION_MOVE) {
       // 减少发送小范围移动(小于4的圆内不做处理)
       int flipX = pointerList[p] - x;
